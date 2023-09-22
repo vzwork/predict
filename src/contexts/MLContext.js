@@ -38,6 +38,8 @@ const MLContextProvider = (props) => {
   const names = ["linear", "quadratic", "cube", "sinusoidal"];
   const [probabilities, setProbabilities] = useState([0, 0, 0, 0]);
   const [watchId, setWatchId] = useState("");
+  const [name, setName] = useState("");
+  const [coefficients, setCoefficients] = useState([]);
 
   const analyze = async (balls) => {
     const docRef = await addDoc(collection(db, "queue"), {
@@ -54,6 +56,8 @@ const MLContextProvider = (props) => {
         if (docSnap.data()) {
           if (Object.keys(docSnap.data()).length !== 0) {
             setProbabilities(docSnap.data().probabilities);
+            setName(docSnap.data().name);
+            setCoefficients(docSnap.data().coefficients);
             deleteDoc(doc(db, "workloads", watchId));
             setWatchId("");
           }
@@ -66,7 +70,9 @@ const MLContextProvider = (props) => {
   }, [watchId]);
 
   return (
-    <MLContext.Provider value={{ analyze, names, probabilities }}>
+    <MLContext.Provider
+      value={{ analyze, names, probabilities, name, coefficients }}
+    >
       {props.children}
     </MLContext.Provider>
   );

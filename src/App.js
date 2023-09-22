@@ -6,6 +6,8 @@ import { MLContext } from "./contexts/MLContext";
 
 const CanvasBack = (props) => {
   const canvasRef = useRef(null);
+  const mlContext = useContext(MLContext);
+  const windowWidth = useWindowSize();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -13,27 +15,131 @@ const CanvasBack = (props) => {
     //Our first draw
     ctx.fillStyle = "#101520";
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  }, []);
 
-  return <canvas ref={canvasRef} {...props} />;
+    console.log(mlContext);
+    // Drawing function in browser
+    // scales (graph scale - accordance with pointer) (html scale number of pixels)
+    //
+    // - x values - spread equally (html) + convert to (graph)
+    // - y values - (graph) values + convert to (html) scale
+    //
+    // Sequence:
+    // generate x HTML points -> x GRAPH -> y GRAPH -> y HTML
+    const POINTS = 100;
+    const x_axis_html = [];
+    console.log(props.windowSize);
+    console.log(props.boundingCanvasPointer);
+    const html_step = props.windowSize.width / (POINTS + 2);
+    for (let i = 1; i < POINTS + 1; i++) {
+      x_axis_html.push(i * html_step);
+    }
+    const x_axis_graph = [];
+    const SCALE_HTML_TO_GRAPH_X = (x) => {
+      x = x - props.boundingCanvasPointer.x;
+      x = x / props.boundingCanvasPointer.width;
+      return x;
+    };
+    x_axis_html.map((x) => {
+      x_axis_graph.push(SCALE_HTML_TO_GRAPH_X(x));
+    });
+    let transform;
+    if (mlContext.name == "linear") {
+      transform = (x) => {
+        return mlContext.coefficients[0] + mlContext.coefficients[1] * x;
+      };
+    }
+    if (mlContext.name == "quadratic") {
+      transform = (x) => {
+        return (
+          mlContext.coefficients[0] +
+          mlContext.coefficients[1] * x +
+          mlContext.coefficients[2] * x * x
+        );
+      };
+    }
+    if (mlContext.name == "cubic") {
+      transform = (x) => {
+        return (
+          mlContext.coefficients[0] +
+          mlContext.coefficients[1] * x +
+          mlContext.coefficients[2] * x * x +
+          mlContext.coefficients[3] * x * x * x
+        );
+      };
+    }
+    if (mlContext.name == "sinusoidal") {
+      transform = (x) => {
+        return (
+          mlContext.coefficients[0] *
+            Math.sin(
+              mlContext.coefficients[1] * x + mlContext.coefficients[2]
+            ) +
+          mlContext.coefficients[3]
+        );
+      };
+    }
+    const y_axis_graph = x_axis_graph.map((x) => transform(x));
+    const SCALE_GRAPH_TO_HTML_Y = (y) => {
+      y = y * props.boundingCanvasPointer.height;
+      y = y + props.boundingCanvasPointer.top;
+      return y;
+    };
+    const y_axis_html = y_axis_graph.map((y) => SCALE_GRAPH_TO_HTML_Y(y));
+
+    for (let i = 0; i < y_axis_html.length; i++) {
+      const x = x_axis_html[i];
+      const y = y_axis_html[i];
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }, [mlContext.name, windowWidth]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={props.windowSize.width}
+      height={props.windowSize.height}
+      style={{ width: "100vw", height: "100vh" }}
+    />
+  );
 };
 
 export default function App() {
+  // data contexts
   const ballsContext = useContext(BallsContext);
   const mlContext = useContext(MLContext);
+  // data contexts
+
+  // resizable adjustements for pointer window
+  const refCanvasPointer = useRef(null);
+  const [boundingCanvasPointer, setBoundingCanvasPointer] = useState(null);
+  const [sizeCanvasPointer, setSizeCanvasPointer] = useState(0);
+  const windowSize = useWindowSize();
+  useEffect(() => {
+    if (refCanvasPointer?.current?.clientHeight) {
+      setSizeCanvasPointer(refCanvasPointer?.current?.clientHeight);
+    }
+    setBoundingCanvasPointer(refCanvasPointer.current.getBoundingClientRect());
+  }, [windowSize]);
+  // resizable adjustements for pointer window
 
   return (
     <div style={{ color: "white" }}>
-      {/* background canvas */}
-      <div style={{ position: "fixed", zIndex: "-1" }}>
+      <div
+        style={{
+          position: "fixed",
+          zIndex: "-1",
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
         <CanvasBack
-          style={{
-            width: "100vw",
-            height: "100vh",
-          }}
+          windowSize={windowSize}
+          boundingCanvasPointer={boundingCanvasPointer}
         />
       </div>
-      {/* foreground interaction + canvas */}
       <div
         style={{
           position: "fixed",
@@ -57,8 +163,25 @@ export default function App() {
           </ul>
         </div>
         <div>
-          {/* <CanvasFront/> */}
-          <CanvasWrapper />
+          <div
+            style={{
+              height: "min(70vw, 70vh)",
+              width: "min(70vw, 70vh)",
+              border: "solid 1px white",
+              borderRadius: "5rem",
+            }}
+            ref={refCanvasPointer}
+          >
+            <div style={{ position: "absolute" }}>
+              <BallsDisplay
+                width={sizeCanvasPointer}
+                height={sizeCanvasPointer}
+              />
+            </div>
+            <div style={{ position: "absolute" }}>
+              <Pointer width={sizeCanvasPointer} height={sizeCanvasPointer} />
+            </div>
+          </div>
         </div>
         <div>
           <div
@@ -105,44 +228,6 @@ export default function App() {
             </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function CanvasWrapper() {
-  const elRef = useRef(null);
-  const [height, setHeight] = useState(0);
-  const [width, setWidth] = useState(0);
-  const size = useWindowSize();
-
-  useEffect(() => {
-    if (elRef?.current?.clientWidth) {
-      setWidth(elRef?.current?.clientWidth);
-    }
-  }, [elRef?.current?.clientWidth, size]);
-
-  useEffect(() => {
-    if (elRef?.current?.clientHeight) {
-      setHeight(elRef?.current?.clientHeight);
-    }
-  }, [elRef?.current?.clientHeight, size]);
-
-  return (
-    <div
-      style={{
-        height: "min(70vw, 70vh)",
-        width: "min(70vw, 70vh)",
-        border: "solid 1px white",
-        borderRadius: "5rem",
-      }}
-      ref={elRef}
-    >
-      <div style={{ position: "absolute" }}>
-        <BallsDisplay width={width} height={height} />
-      </div>
-      <div style={{ position: "absolute" }}>
-        <Pointer width={width} height={height} />
       </div>
     </div>
   );
