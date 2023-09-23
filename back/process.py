@@ -67,6 +67,12 @@ def on_snapshot(col_snapshot, changes, read_time):
         if len(x_axis) == 0:
             db.collection("queue").document(doc.id).delete()
         else:
+            # Get the current date and time
+            current_time = datetime.datetime.now()
+
+            # Print the current time
+            print("Current Time:", current_time)
+
             SIZE_MATRIX = 64
 
             def to_matrix(x, y):
@@ -97,8 +103,8 @@ def on_snapshot(col_snapshot, changes, read_time):
 
             z_rounded = np.round(z).astype(int)
 
-            print(doc.id)
-            print(z_rounded)
+            # print(doc.id)
+            # print(z_rounded)
 
             X = np.array(x_axis)
             y = np.array(y_axis)

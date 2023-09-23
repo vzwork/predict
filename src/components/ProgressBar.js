@@ -14,8 +14,8 @@ class ProgressBar extends Component {
   }
 
   startProgressBar() {
-    const totalTime = 6000; // 6000 milliseconds = 5 seconds
-    const interval = 50; // Update the progress every 50 milliseconds
+    const totalTime = 7000; // 6000 milliseconds = 5 seconds
+    const interval = 70; // Update the progress every 50 milliseconds
 
     const numUpdates = totalTime / interval;
     const increment = 100 / numUpdates;
