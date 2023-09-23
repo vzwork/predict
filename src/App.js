@@ -91,6 +91,20 @@ export default function App() {
             }}
             ref={refCanvasPointer}
           >
+            {ballsContext.balls.length == 0 ? (
+              <div
+                style={{
+                  position: "absolute",
+                  height: "min(70vw, 70vh)",
+                  width: "min(70vw, 70vh)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <h1>Click here!</h1>
+              </div>
+            ) : null}
             <div style={{ position: "absolute" }}>
               <BallsDisplay
                 width={sizeCanvasPointer}
