@@ -42,6 +42,7 @@ const MLContextProvider = (props) => {
   const [coefficients, setCoefficients] = useState([]);
 
   const analyze = async (balls) => {
+    setCoefficients([]);
     const docRef = await addDoc(collection(db, "queue"), {
       coordinates: balls,
     });

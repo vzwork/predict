@@ -55,7 +55,7 @@ def on_snapshot(col_snapshot, changes, read_time):
         
         x_axis = []
         y_axis = []
-
+        
         for object in doc.to_dict().items():
             for coordinate in object[1]:
                 for axis, value in coordinate.items():
@@ -64,57 +64,64 @@ def on_snapshot(col_snapshot, changes, read_time):
                     if axis == "y":
                         y_axis.append(value)
 
-        SIZE_MATRIX = 64
+        if len(x_axis) == 0:
+            db.collection("queue").document(doc.id).delete()
+        else:
+            SIZE_MATRIX = 64
 
-        def to_matrix(x, y):
-            # when rounding to whole indexes, some values may get squashed
-            # use SIZE_MATRIX - 1 and round
-            matrix = np.zeros((SIZE_MATRIX, SIZE_MATRIX), dtype=int)
-            
-            def scale_resolution(axis):
-                min_axis = np.min(axis)
-                max_axis = np.max(axis)
+            def to_matrix(x, y):
+                # when rounding to whole indexes, some values may get squashed
+                # use SIZE_MATRIX - 1 and round
+                matrix = np.zeros((SIZE_MATRIX, SIZE_MATRIX), dtype=int)
                 
-                range_axis = max_axis - min_axis
-                range_matrix = SIZE_MATRIX - 1
+                def scale_resolution(axis):
+                    min_axis = np.min(axis)
+                    max_axis = np.max(axis)
+                    
+                    range_axis = max_axis - min_axis
+                    range_matrix = SIZE_MATRIX - 1
+                    
+                    return  np.round( (axis - min_axis) / range_axis * range_matrix ).astype(int)
                 
-                return  np.round( (axis - min_axis) / range_axis * range_matrix ).astype(int)
-            
-            x = scale_resolution(x)
-            y = scale_resolution(y)
-            
-            matrix[x, y] = 1
-            return matrix.reshape((1, 64, 64, 1))
+                x = scale_resolution(x)
+                y = scale_resolution(y)
+                
+                matrix[x, y] = 1
+                return matrix.reshape((1, 64, 64, 1))
 
-        view = to_matrix(x_axis, y_axis)
+            view = to_matrix(x_axis, y_axis)
 
-        model = tf.keras.models.load_model('predict')
+            model = tf.keras.models.load_model('predict')
 
-        z = model.predict([view])
+            z = model.predict([view])
 
-        z_rounded = np.round(z).astype(int)
+            z_rounded = np.round(z).astype(int)
 
-        print(doc.id)
-        print(z_rounded)
+            print(doc.id)
+            print(z_rounded)
 
-        X = np.array(x_axis)
-        y = np.array(y_axis)
-        if z_rounded[0][0] == 1: # linear
-            coefficients = linear_regression(X, y)
-            name = 'linear'
-        if z_rounded[0][1] == 1: # quadratic
-            coefficients = quadratic_regression(X, y)
-            name = 'quadratic'
-        if z_rounded[0][2] == 1: # cubic
-            coefficients = cubic_regression(X, y)
-            name = 'cubic'
-        if z_rounded[0][3] == 1: # sinusoidal
-            coefficients = sinusoidal_regression(X, y)
-            name = 'sinusoidal'
+            X = np.array(x_axis)
+            y = np.array(y_axis)
 
-        db.collection("queue").document(doc.id).delete()
-        data = {'probabilities':z.flatten().tolist(), 'coefficients':coefficients, 'name':name}
-        db.collection('workloads').document(doc.id).set(data)
+            name = ''
+
+            if z_rounded[0][0] == 1: # linear
+                coefficients = linear_regression(X, y)
+                name = 'linear'
+            if z_rounded[0][1] == 1: # quadratic
+                coefficients = quadratic_regression(X, y)
+                name = 'quadratic'
+            if z_rounded[0][2] == 1: # cubic
+                coefficients = cubic_regression(X, y)
+                name = 'cubic'
+            if z_rounded[0][3] == 1: # sinusoidal
+                coefficients = sinusoidal_regression(X, y)
+                name = 'sinusoidal'
+
+            if name != '':
+                db.collection("queue").document(doc.id).delete()
+                data = {'probabilities':z.flatten().tolist(), 'coefficients':coefficients, 'name':name}
+                db.collection('workloads').document(doc.id).set(data)
 
 
 # Create a listener.
