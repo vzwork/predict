@@ -28,7 +28,7 @@ def cubic_regression(X, y):
 
 def sinusoidal_regression(X, y):
   optimize_func = lambda x: x[0]*np.sin(x[1]*X+x[2]) + x[3] - y
-  est_amp, est_freq, est_phase, est_mean = leastsq(optimize_func, [1, 1, 1, 1])[0]
+  est_amp, est_freq, est_phase, est_mean = leastsq(optimize_func, [0.2, 0.2, 0.2, 0.2])[0]
   return [est_amp, est_freq, est_phase, est_mean]
 # mathematical approximation
 
