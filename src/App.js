@@ -71,7 +71,33 @@ export default function App() {
         }}
       >
         <div>
-          <h1>Pattern Recognition</h1>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "70vw",
+            }}
+          >
+            <div>
+              <h1>Pattern Recognition</h1>
+            </div>
+
+            <div>
+              <a
+                style={{ color: "white" }}
+                href="https://www.linkedin.com/in/vzwork/"
+              >
+                Linked
+              </a>
+              <a
+                style={{ color: "white", paddingLeft: "1rem" }}
+                href="https://github.com/vzwork/predict"
+              >
+                Git
+              </a>
+            </div>
+          </div>
           <p>Probabilities:</p>
           <ul>
             {mlContext.names.map((value, index) => (
@@ -84,8 +110,8 @@ export default function App() {
         <div>
           <div
             style={{
-              height: "min(70vw, 70vh)",
-              width: "min(70vw, 70vh)",
+              height: "min(60vw, 60vh)",
+              width: "min(60vw, 60vh)",
               border: "solid 1px white",
               borderRadius: "5rem",
             }}
@@ -95,8 +121,8 @@ export default function App() {
               <div
                 style={{
                   position: "absolute",
-                  height: "min(70vw, 70vh)",
-                  width: "min(70vw, 70vh)",
+                  height: "min(60vw, 60vh)",
+                  width: "min(60vw, 60vh)",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
